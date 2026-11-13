@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum Role {
+  OWNER  // Pemilik Warung
+  KEEPER // Penjaga Warung
+}
+
+enum StockStatus {
+  NORMAL  // stok > batas minimum
+  LOW     // stok <= batas minimum (menipis)
+  EMPTY   // stok = 0 (habis)
+}
+
+enum MovementType {
+  IN         // barang masuk
+  OUT        // barang keluar
+  ADJUSTMENT // penyesuaian stok manual oleh Pemilik
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(KEEPER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products       Product[]
+  stockMovements StockMovement[]
+  aiUsageHistory AIUsageHistory[]
+}
+
+model Product {
+  id        Int         @id @default(autoincrement())
+  name      String
+  category  String
+  unit      String
+  price     Decimal     @db.Decimal(12, 2)
+  stock     Int         @default(0)
+  minStock  Int         @default(0)
+  status    StockStatus @default(NORMAL)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  stockMovements StockMovement[]
+  restockItems   RestockItem[]
+}
+
+// Mencatat setiap perubahan stok (masuk, keluar, atau penyesuaian)
+model StockMovement {
+  id        Int          @id @default(autoincrement())
+  type      MovementType
+  quantity  Int
+  notes     String?
+  createdAt DateTime     @default(now())
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+
+// Daftar produk yang perlu diisi ulang (stok menipis atau habis)
+model RestockItem {
+  id           Int      @id @default(autoincrement())
+  suggestedQty Int?
+  addedAt      DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  productId Int     @unique
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+// Riwayat percakapan dengan AI Assistant (Gemini)
+model AIUsageHistory {
+  id        Int      @id @default(autoincrement())
+  question  String
+  response  String
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
