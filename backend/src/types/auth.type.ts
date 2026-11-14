@@ -1,7 +1,6 @@
-export interface UserResponse {
+export interface  UserResponse {
   name: string;
   email: string;
-  createdAt: Date;
 }
 
 export interface JwtPayload {

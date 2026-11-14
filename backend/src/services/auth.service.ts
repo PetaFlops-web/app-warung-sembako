@@ -23,7 +23,11 @@ export async function createUser(input: CreateUserInput): Promise<UserResponse> 
     },
   });
 
-  const { password: _, ...newUser } = user; 
+  const newUser = {
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
 
   return newUser;
 }
