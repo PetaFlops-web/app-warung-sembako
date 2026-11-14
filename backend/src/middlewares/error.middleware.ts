@@ -9,7 +9,7 @@ export function errorHandler(
 ): void {
   if (err instanceof ClientError) {
     res.status(err.statusCode).json({
-      status: 'fail',
+      status: 'error',
       message: err.message,
       ...(err.details ? { details: err.details } : {}),
     });
