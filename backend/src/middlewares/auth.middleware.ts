@@ -1,18 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
+import type { JwtPayload } from '../types/auth.type.ts'
+import TokenManager from '../utils/token-manager.ts'
 import jwt from 'jsonwebtoken'
-
-interface JwtPayload {
-  id: number
-  role: string
-}
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload
-    }
-  }
-}
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const token = req.cookies['token'] as string | undefined
