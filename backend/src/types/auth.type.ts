@@ -1,11 +1,17 @@
-export interface  UserResponse {
+export interface  UserRegisterResponse {
   name: string;
   email: string;
   role: string;
 }
 
+export interface UserLoginResponse {
+
+}
+
 export interface JwtPayload {
   id: number
+  name: string
+  email: string
   role: string
 }
 

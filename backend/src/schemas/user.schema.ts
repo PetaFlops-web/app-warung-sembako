@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const createUserSchema = z.object({
+export const registerUserSchema = z.object({
   body: z.object({
     name: z.string("Nama wajib dikirim"),
     email: z.email("Email tidak valid"),
@@ -9,4 +9,12 @@ export const createUserSchema = z.object({
   })
 });
 
-export type CreateUserInput = z.infer<typeof createUserSchema>['body'];
+export const loginUserSchema = z.object({
+  body: z.object({
+    email: z.email("Email tidak valid"),
+    password: z.string().min(6, "Kata sandi minimal 6 karakter"),
+  })
+});
+
+export type registerUserInput = z.infer<typeof registerUserSchema>['body'];
+export type loginUserInput = z.infer<typeof loginUserSchema>['body'];
