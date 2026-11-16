@@ -1,24 +1,24 @@
-export interface  UserRegisterResponse {
-  name: string;
+export interface UserRegisterResponse {
+  username: string;
   email: string;
   role: string;
 }
 
 export interface UserLoginResponse {
-
+  user_id: string;
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface JwtPayload {
-  id: number
-  name: string
-  email: string
-  role: string
+  sub: string;
+  role: string;
 }
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload
+      user?: JwtPayload;
     }
   }
 }

@@ -6,7 +6,7 @@ import { prisma } from '../config/prisma.ts';
 import bcrypt from 'bcryptjs';
 
 export async function registerUser(input: registerUserInput): Promise<UserRegisterResponse> {
-  const { name, email, password, role } = input;
+  const { username, email, password, role } = input;
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -16,21 +16,14 @@ export async function registerUser(input: registerUserInput): Promise<UserRegist
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    },
+    data: { username, email, password: hashedPassword, role },
   });
 
-  const newUser = {
-    name: user.name,
+  return {
+    username: user.username,
     email: user.email,
     role: user.role,
   };
-
-  return newUser;
 }
 
 export async function loginUser(input: loginUserInput): Promise<UserLoginResponse> {
@@ -39,22 +32,29 @@ export async function loginUser(input: loginUserInput): Promise<UserLoginRespons
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
-    throw new AuthenticationError('Email tidak ditemukan');
+    throw new AuthenticationError('Email atau kata sandi salah');
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    throw new AuthenticationError('Kata sandi salah');
+    throw new AuthenticationError('Email atau kata sandi salah');
   }
 
-  const token = TokenManager.generateAccessToken({
-    user_id: user.id,
-    email: user.email,
-    role: user.role
+  const payload = { sub: user.id, role: user.role };
+  const accessToken = TokenManager.generateAccessToken(payload);
+  const refreshToken = TokenManager.generateRefreshToken(payload);
+
+  await prisma.refreshToken.create({
+    data: {
+      token: refreshToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
   });
 
   return {
     user_id: user.id,
-    accessToken: token,
+    access_token: accessToken,
+    refresh_token: refreshToken,
   };
 }
