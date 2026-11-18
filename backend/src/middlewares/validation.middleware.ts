@@ -3,7 +3,7 @@ import { ZodError, type ZodObject, type ZodRawShape } from 'zod';
 import { ERROR_CODE } from '../expectation/index.ts';
 
 export const validate = <T extends ZodRawShape>(schema: ZodObject<T>) => 
-  (req: Request, res: Response, next: NextFunction): void => {
+  (req: Request<unknown, unknown, unknown, unknown>, res: Response, next: NextFunction): void => {
     try {
       schema.parse({
         body: req.body,

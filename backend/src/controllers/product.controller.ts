@@ -1,21 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
+import type { BodyRequest, IdBodyRequest, QueryRequest } from '../types/http.type.ts';
 import type { createProductInput, updateProductInput } from '../schemas/product.schema.ts';
+import type { ListQuery, IdParams } from '../types/product.type.ts';
 import { createProduct, deleteProduct, getProductById, listProducts, updateProduct } from '../services/product.service.ts';
 
-type IdParams = { id: string };
-
-interface ListQuery {
-  q?: string;
-  id_kategori?: string;
-  status_stok?: string;
-  aktif?: string;
-  sort?: string;
-  halaman?: string;
-  limit?: string;
-}
-
 export async function index(
-  req: Request<{}, {}, {}, ListQuery>,
+  req: QueryRequest<ListQuery>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
@@ -42,7 +32,7 @@ export async function show(
 }
 
 export async function store(
-  req: Request<{}, {}, createProductInput>,
+  req: BodyRequest<createProductInput>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
@@ -55,7 +45,7 @@ export async function store(
 }
 
 export async function update(
-  req: Request<IdParams, {}, updateProductInput>,
+  req: IdBodyRequest<updateProductInput>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {

@@ -1,16 +1,19 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
 import type { createCategoryInput, updateCategoryInput } from '../schemas/category.schema.ts';
 import { createCategory, listCategories, updateCategory } from '../services/category.service.ts';
-
-type IdParams = { id: string };
+import type { BodyRequest, IdBodyRequest, QueryRequest } from '../types/http.type.ts';
 
 export async function index(
-  req: Request<{}, {}, {}, { halaman?: string; limit?: string }>,
+  req: QueryRequest<{ halaman?: string; limit?: string }>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { items, metadata } = await listCategories(req.query.halaman, req.query.limit);
+
+    const page = typeof req.query.halaman === 'string' ? req.query.halaman : undefined;
+    const limit = typeof req.query.limit === 'string' ? req.query.limit : undefined;
+
+    const { items, metadata } = await listCategories(page, limit);
     res.status(200).json({ kategori: items, meta: metadata });
   } catch (error) {
     next(error);
@@ -18,7 +21,7 @@ export async function index(
 }
 
 export async function store(
-  req: Request<{}, {}, createCategoryInput>,
+  req: BodyRequest<createCategoryInput>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
@@ -31,7 +34,7 @@ export async function store(
 }
 
 export async function update(
-  req: Request<IdParams, {}, updateCategoryInput>,
+  req: IdBodyRequest<updateCategoryInput>,
   res: Response,
   next: NextFunction,
 ): Promise<void> {

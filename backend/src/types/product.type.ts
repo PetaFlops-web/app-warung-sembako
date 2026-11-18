@@ -3,6 +3,8 @@ import type { StockStatus, InventoryType } from '../utils/helpers/stock-status.t
 
 export type JenisPersediaan = 'TRACKED' | 'NOT_TRACKED';
 export type Direction = 'asc' | 'desc';
+export type IdParams = { id: string };
+
 
 export interface CategoryResponse {
   id: string;
@@ -84,4 +86,14 @@ export interface ProductWhere {
   isDeleted?: boolean;
   categoryId?: string;
   name?: { contains: string; mode: 'insensitive' };
+}
+
+export interface ListQuery {
+  q?: string;
+  id_kategori?: string;
+  status_stok?: string;
+  aktif?: string;
+  sort?: string;
+  halaman?: string;
+  limit?: string;
 }

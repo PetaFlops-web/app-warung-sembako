@@ -1,10 +1,11 @@
-import type { Request, Response, NextFunction } from 'express'
+import type { Response, NextFunction } from 'express';
+import type { BodyRequest } from '../types/http.type.ts';
 import type { registerUserInput, loginUserInput, refreshTokenInput } from '../schemas/user.schema.ts'
 import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse } from '../types/auth.type.ts';
 import { registerUser, loginUser, refreshSession, logoutSession } from '../services/auth.service.ts'
 
 export async function login(
-  req: Request<{}, {}, loginUserInput>, 
+  req: BodyRequest<loginUserInput>, 
   res: Response<{ pengguna: UserLoginResponse }>, 
   next: NextFunction
 ): Promise<void> {
@@ -17,7 +18,7 @@ export async function login(
 }
 
 export async function register(
-  req: Request<{}, {}, registerUserInput>, 
+  req: BodyRequest<registerUserInput>, 
   res: Response<{ pengguna: UserRegisterResponse }>,
   next: NextFunction
 ): Promise<void> { 
@@ -30,7 +31,7 @@ export async function register(
 }
 
 export async function refresh(
-  req: Request<{}, {}, refreshTokenInput>,
+  req: BodyRequest<refreshTokenInput>,
   res: Response<{ pengguna: TokenPairResponse }>,
   next: NextFunction
 ): Promise<void> {
@@ -43,7 +44,7 @@ export async function refresh(
 }
 
 export async function logout(
-  req: Request<{}, {}, refreshTokenInput>,
+  req: BodyRequest<refreshTokenInput>,
   res: Response,
   next: NextFunction
 ): Promise<void> {
