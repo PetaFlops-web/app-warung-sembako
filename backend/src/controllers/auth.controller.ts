@@ -18,12 +18,12 @@ export async function login(
 
 export async function register(
   req: Request<{}, {}, registerUserInput>, 
-  res: Response<{message: string, user?: UserRegisterResponse}>,
+  res: Response<{ pengguna: UserRegisterResponse }>,
   next: NextFunction
 ): Promise<void> { 
   try {
-    const newUser = await registerUser(req.body);
-    res.status(201).json({ message: 'User berhasil dibuat', user: newUser });
+    const pengguna = await registerUser(req.body);
+    res.status(201).json({ pengguna });
   } catch (error) {
     next(error);
   }

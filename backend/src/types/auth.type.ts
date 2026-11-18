@@ -1,7 +1,7 @@
 export interface  UserRegisterResponse {
-  name: string;
+  nama: string;
   email: string;
-  role: string;
+  peran: string;
 }
 
 export interface UserLoginResponse {

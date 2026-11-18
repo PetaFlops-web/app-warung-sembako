@@ -98,3 +98,24 @@ Verifikasi mentah:
 - [ ] JSON malformed (SyntaxError dari body-parser) masih dibalas 500 INTERNAL_SERVER_ERROR; `kontrak_api.md` §4 menyebut malformed = 400 BAD_REQUEST.
 - [ ] 401/403 yang ditulis langsung oleh `auth.middleware.ts` (`{ message }` tanpa `status`/`kode`) belum ikut format kontrak — di luar cakupan yang dipilih untuk fase ini.
 - [ ] Pesan default Zod masih berbahasa Inggris untuk tipe yang salah (mis. `Invalid input: expected string, received undefined`) karena schema tidak menulis pesan untuk kasus tipe.
+
+---
+
+## Fase 3 — Respons `POST /register` memakai `nama`/`email`/`peran`
+
+Rujukan: `kontrak_api.md` §2 (respons tunggal berbentuk `{ "[nama]": { ... } }`, tanpa field `message`) dan §5 untuk gaya respons `pengguna` yang sudah dipakai `/login`.
+
+Keputusan owner: respons dibungkus `{ pengguna: { nama, email, peran } }` tanpa `message`; field mengikuti penamaan snake_case kontrak.
+
+- [x] `src/types/auth.type.ts`: `UserRegisterResponse` menjadi `{ nama, email, peran }`
+- [x] `src/services/auth.service.ts`: `registerUser` mengembalikan `{ nama, email, peran }`
+- [x] `src/controllers/auth.controller.ts`: `register` membalas 201 `{ pengguna: { nama, email, peran } }` (field `message` dihapus)
+- [x] Verifikasi: `npx tsc --noEmit` hijau; curl di `PORT=3002` (register 201, email duplikat 409 DUPLICATE, role tidak valid 400 BAD_REQUEST); user uji `uji.register@example.com` sudah dihapus dari DB
+
+Verifikasi mentah:
+
+| Uji | Respons |
+|---|---|
+| `POST /register` (data valid, role KEEPER) | 201 `{"pengguna":{"nama":"Uji Register","email":"uji.register@example.com","peran":"KEEPER"}}` |
+| `POST /register` email duplikat | 409 `{"status":"error","kode":"DUPLICATE","kesalahan":[{"message":"Email sudah digunakan"}]}` |
+| `POST /register` role `ADMIN` | 400 `{"status":"error","kode":"BAD_REQUEST","kesalahan":[{"role":"Role harus OWNER atau KEEPER"}]}` |

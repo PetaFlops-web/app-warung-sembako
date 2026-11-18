@@ -25,9 +25,9 @@ export async function registerUser(input: registerUserInput): Promise<UserRegist
   });
 
   const newUser = {
-    name: user.name,
+    nama: user.name,
     email: user.email,
-    role: user.role,
+    peran: user.role,
   };
 
   return newUser;
