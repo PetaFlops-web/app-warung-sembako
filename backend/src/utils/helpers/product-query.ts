@@ -1,6 +1,6 @@
-import { ValidationError } from '../expectation/index.ts';
-import type { Prisma } from '../generated/prisma/client.ts';
-import type { Direction, ListProductQuery, ProductWhere } from '../types/product.type.ts';
+import { ValidationError } from '../../expectation/index.ts';
+import type { Prisma } from '../../generated/prisma/client.ts';
+import type { Direction, ListProductQuery, ProductWhere } from '../../types/product.type.ts';
 
 export const SORT_FIELDS = {
   nama: 'name',

@@ -2,18 +2,10 @@ import { prisma } from '../config/prisma.ts';
 import { ConflictError, NotFoundError } from '../expectation/index.ts';
 import { categoryRepository } from '../repositories/category.repository.ts';
 import { buildMetadata, parseLimit, parsePage } from '../utils/query.ts';
+import { toCategoryResponse } from '../utils/helpers/category-mapper.ts';
 import type { CategoryResponse, ListResult } from '../types/product.type.ts';
 import type { createCategoryInput, updateCategoryInput } from '../schemas/category.schema.ts';
 import { isUniqueViolation } from '../utils/prisma-error.ts';
-
-function toCategoryResponse(row: { id: string; name: string; createdAt: Date; updatedAt: Date }): CategoryResponse {
-  return {
-    id: row.id,
-    nama: row.name,
-    dibuat_pada: row.createdAt.toISOString(),
-    diperbarui_pada: row.updatedAt.toISOString(),
-  };
-}
 
 export async function assertExists(id: string): Promise<void> {
   const category = await categoryRepository.findById(id);

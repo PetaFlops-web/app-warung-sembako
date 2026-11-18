@@ -31,4 +31,5 @@ const TokenManager = {
 };
 
 export { ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE };
+
 export default TokenManager;

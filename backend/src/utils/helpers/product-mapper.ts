@@ -1,5 +1,5 @@
-import { getStockStatus, STOCK_STATUS_LABEL, type InventoryType } from './stock-status.ts';
-import type { ProductResponse } from '../types/product.type.ts';
+import { getStockStatus, STOCK_STATUS_LABEL } from './stock-status.ts';
+import type { ProductResponse, ProductRow } from '../../types/product.type.ts';
 
 type DecimalLike = { toString(): string };
 
@@ -23,21 +23,6 @@ export function toNumber(value: unknown): number {
   return 0;
 }
 
-export interface ProductRow {
-  id: string;
-  name: string;
-  unit: string;
-  price: number;
-  stock: unknown;
-  minStock: unknown;
-  inventoryType: InventoryType;
-  imageId: string | null;
-  imageUrl: string | null;
-  isDeleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  category: { id: string; name: string };
-}
 
 export function toProductResponse(row: ProductRow): ProductResponse {
   const stock = toNumber(row.stock);

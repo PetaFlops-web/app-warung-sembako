@@ -1,16 +1,9 @@
 import { prisma } from '../config/prisma.ts';
-import { toNumber } from '../utils/product-mapper.ts';
+import { toNumber } from '../utils/helpers/product-mapper.ts';
 import type { Prisma } from '../generated/prisma/client.ts';
-import type { ProductWhere } from '../types/product.type.ts';
+import type { ProductWhere, FindManyArgs } from '../types/product.type.ts';
 
 export const PRODUCT_INCLUDE = { category: true } as const;
-
-interface FindManyArgs {
-  where: ProductWhere;
-  orderBy: Prisma.ProductOrderByWithRelationInput[];
-  skip?: number;
-  take?: number;
-}
 
 export const productRepository = {
   findById: (id: string) => prisma.product.findUnique({ where: { id }, include: PRODUCT_INCLUDE }),

@@ -1,4 +1,5 @@
-import type { StockStatus } from '../utils/stock-status.ts';
+import type { Prisma } from '../generated/prisma/browser.ts';
+import type { StockStatus, InventoryType } from '../utils/helpers/stock-status.ts';
 
 export type JenisPersediaan = 'TRACKED' | 'NOT_TRACKED';
 export type Direction = 'asc' | 'desc';
@@ -14,6 +15,30 @@ export interface ProductCategoryRef {
   id: string;
   nama: string;
 }
+
+export interface FindManyArgs {
+  where: ProductWhere;
+  orderBy: Prisma.ProductOrderByWithRelationInput[];
+  skip?: number;
+  take?: number;
+}
+
+export interface ProductRow {
+  id: string;
+  name: string;
+  unit: string;
+  price: number;
+  stock: unknown;
+  minStock: unknown;
+  inventoryType: InventoryType;
+  imageId: string | null;
+  imageUrl: string | null;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  category: { id: string; name: string };
+}
+
 
 export interface ProductResponse {
   id: string;
