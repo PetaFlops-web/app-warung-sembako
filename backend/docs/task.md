@@ -119,35 +119,3 @@ Verifikasi mentah:
 | `POST /register` (data valid, role KEEPER) | 201 `{"pengguna":{"nama":"Uji Register","email":"uji.register@example.com","peran":"KEEPER"}}` |
 | `POST /register` email duplikat | 409 `{"status":"error","kode":"DUPLICATE","kesalahan":[{"message":"Email sudah digunakan"}]}` |
 | `POST /register` role `ADMIN` | 400 `{"status":"error","kode":"BAD_REQUEST","kesalahan":[{"role":"Role harus OWNER atau KEEPER"}]}` |
-
----
-
-## Fase 4 — Rekonsiliasi dengan `origin/main` + perbaikan rotasi refresh token
-
-Konteks: `origin/main` maju ke `c1c88c1` (fondasi skema paralel: `User.id` UUID, tabel `users`/`refresh_tokens`/`categories`/`products`, kolom `username`, migrasi `20261116163741_init_core_tables` yang DROP tabel lama) — bentrok langsung dengan 4 berkas lokal (`schema.prisma`, `auth.service.ts`, `auth.type.ts`, `user.schema.ts`).
-
-Keputusan owner: versi lokal dipertahankan sebagai sumber kebenaran.
-
-- [x] Merge commit `af2dd3b`: konflik diselesaikan memakai versi lokal; pohon hasil merge identik dengan versi lokal (`git diff HEAD --cached` kosong)
-- [x] Migrasi `20261116163741_init_core_tables` dikeluarkan dari pohon: `init` → `init_core_tables` (DROP `"User"`) → `add_refresh_token` (FK ke `"User"`) selalu gagal saat `migrate deploy`; urutan yang berlaku sekarang `20261113181601_init` → `20261118045415_add_refresh_token`. Pekerjaan skema dari `c1c88c1` tetap utuh di riwayat git
-- [x] Bug ditemukan saat verifikasi ulang tree hasil merge: refresh token JWT yang diterbitkan dalam **detik yang sama** menghasilkan string identik (klaim `iat`/`exp` berpresisi detik), sehingga `prisma.refreshToken.create` gagal `P2002` pada `RefreshToken_tokenHash_key` dan `POST /refresh` membalas 500. Uji Fase 1 lolos hanya karena kebetulan lintas detik
-- [x] Perbaikan: klaim `jti` acak (`randomUUID()`) pada refresh token di `src/utils/token-manager.ts`
-- [x] Verifikasi: `npx tsc --noEmit` hijau; uji service (2 sesi + 5 rotasi dalam detik yang sama → semua token berbeda, token lama & token setelah revoke ditolak `AuthenticationError`); curl di `PORT=3002` (login 200, 5 rotasi beruntun 200, token lama 401, logout 204, refresh setelah logout 401, kredensial salah 401)
-
-Verifikasi mentah (curl, tree hasil merge + perbaikan `jti`):
-
-| Uji | Respons |
-|---|---|
-| `POST /login` | 200 `{"pengguna":{"id_pengguna":11,"token_akses":"...","token_penyegaran":"..."}}` |
-| `POST /refresh` rotasi 1–5 (beruntun, detik yang sama) | 200 semua, token penyegaran baru berbeda tiap kali |
-| `POST /refresh` token lama (R1) dipakai ulang | 401 `{"kode":"UNAUTHORIZED","kesalahan":[{"message":"Token penyegaran tidak valid atau sudah kedaluwarsa"}]}` |
-| `POST /logout` (access + refresh token) | 204 tanpa body |
-| `POST /refresh` setelah logout | 401 `UNAUTHORIZED` |
-| `POST /login` kredensial salah | 401 `UNAUTHORIZED` |
-
-Catatan: kode error tak terduga (500) belum dilogging di `errorHandler`, sehingga bug P2002 di atas awalnya tidak muncul di log server — perlu ditambahkan saat memutuskan penanganan 500.
-
-### Temuan tambahan Fase 4
-
-- [ ] Versi `origin/main` sudah memakai pesan login generik (`Email atau kata sandi salah`, FR-AUTH-03) dan skema UUID sesuai kontrak §2; keduanya tidak diambil karena keputusan "lokal menang". Bisa diporting terpisah bila diinginkan.
-- [ ] Data dev: tabel lama (`User`, 8 baris) masih dipakai; bila kelak pindah ke fondasi skema `c1c88c1`, `migrate deploy` akan DROP tabel tersebut (kehilangan data dev).

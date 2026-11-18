@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import config from '../config/env.ts';
 import type { JwtPayload } from '../types/auth.type.ts';
@@ -19,7 +18,7 @@ const TokenManager = {
     }),
 
   generateRefreshToken: (payload: JwtPayload) =>
-    jwt.sign({ ...payload, typ: REFRESH_TOKEN_TYPE, jti: randomUUID() }, refreshTokenKey, {
+    jwt.sign({ ...payload, typ: REFRESH_TOKEN_TYPE }, refreshTokenKey, {
       expiresIn: refreshTokenAge,
       algorithm: ALGORITHM,
     }),
