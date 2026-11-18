@@ -70,7 +70,11 @@ google-credentials*.json
 jwt.secret
 *.token
 
+# dokumentation
+docs/
+
 # AI Agent skill definitions
 .agents/
 .claude/
 .windsurf/
+AGENT.md
