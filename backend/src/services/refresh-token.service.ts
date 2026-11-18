@@ -3,14 +3,9 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma.ts';
 import { AuthenticationError } from '../expectation/index.ts';
 import TokenManager, { REFRESH_TOKEN_TYPE } from '../utils/token-manager.ts';
-import type { JwtPayload, TokenPairResponse } from '../types/auth.type.ts';
+import type { JwtPayload, TokenPairResponse, RefreshTokenOwner } from '../types/auth.type.ts';
 
 const INVALID_REFRESH_TOKEN_MESSAGE = 'Token penyegaran tidak valid atau sudah kedaluwarsa';
-
-type RefreshTokenOwner = {
-  id: number;
-  role: string;
-};
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');

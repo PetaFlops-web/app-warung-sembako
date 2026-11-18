@@ -20,6 +20,11 @@ export interface JwtPayload {
   role: string
 }
 
+export type RefreshTokenOwner = {
+  id: number;
+  role: string;
+};
+
 declare global {
   namespace Express {
     interface Request {
