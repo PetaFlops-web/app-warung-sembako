@@ -1,6 +1,7 @@
 import type { StockStatus } from '../utils/stock-status.ts';
 
 export type JenisPersediaan = 'TRACKED' | 'NOT_TRACKED';
+export type Direction = 'asc' | 'desc';
 
 export interface CategoryResponse {
   id: string;
@@ -42,4 +43,20 @@ export interface ListMetadata {
 export interface ListResult<T> {
   items: T[];
   metadata: ListMetadata;
+}
+
+export interface ListProductQuery {
+  q?: string | undefined;
+  id_kategori?: string | undefined;
+  status_stok?: string | undefined;
+  aktif?: string | undefined;
+  sort?: string | undefined;
+  halaman?: string | undefined;
+  limit?: string | undefined;
+}
+
+export interface ProductWhere {
+  isDeleted?: boolean;
+  categoryId?: string;
+  name?: { contains: string; mode: 'insensitive' };
 }

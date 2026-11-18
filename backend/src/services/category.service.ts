@@ -1,12 +1,10 @@
 import { prisma } from '../config/prisma.ts';
 import { ConflictError, NotFoundError } from '../expectation/index.ts';
+import { categoryRepository } from '../repositories/category.repository.ts';
 import { buildMetadata, parseLimit, parsePage } from '../utils/query.ts';
 import type { CategoryResponse, ListResult } from '../types/product.type.ts';
 import type { createCategoryInput, updateCategoryInput } from '../schemas/category.schema.ts';
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002';
-}
+import { isUniqueViolation } from '../utils/prisma-error.ts';
 
 function toCategoryResponse(row: { id: string; name: string; createdAt: Date; updatedAt: Date }): CategoryResponse {
   return {
@@ -15,6 +13,14 @@ function toCategoryResponse(row: { id: string; name: string; createdAt: Date; up
     dibuat_pada: row.createdAt.toISOString(),
     diperbarui_pada: row.updatedAt.toISOString(),
   };
+}
+
+export async function assertExists(id: string): Promise<void> {
+  const category = await categoryRepository.findById(id);
+
+  if (!category) {
+    throw new NotFoundError('Kategori tidak ditemukan');
+  }
 }
 
 export async function listCategories(halamanRaw?: string, limitRaw?: string): Promise<ListResult<CategoryResponse>> {
