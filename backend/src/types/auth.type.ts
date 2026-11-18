@@ -5,13 +5,18 @@ export interface  UserRegisterResponse {
 }
 
 export interface UserLoginResponse {
+  id_pengguna: number;
+  token_akses: string;
+  token_penyegaran: string;
+}
 
+export interface TokenPairResponse {
+  token_akses: string;
+  token_penyegaran: string;
 }
 
 export interface JwtPayload {
-  id: number
-  name: string
-  email: string
+  sub: number
   role: string
 }
 

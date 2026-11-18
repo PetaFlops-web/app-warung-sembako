@@ -1,9 +1,12 @@
 import { Router } from 'express'
 import { validate } from '../middlewares/validation.middleware.js'
-import { registerUserSchema, loginUserSchema } from '../schemas/user.schema.js'
-import { login, register, logout } from '../controllers/auth.controller.js'
+import { registerUserSchema, loginUserSchema, refreshTokenSchema } from '../schemas/user.schema.js'
+import { login, register, refresh, logout } from '../controllers/auth.controller.js'
+import { requireAuth } from '../middlewares/auth.middleware.js'
 
 export const authRouter = Router()
 
 authRouter.post('/login', validate(loginUserSchema), login)
 authRouter.post('/register', validate(registerUserSchema), register)
+authRouter.post('/refresh', validate(refreshTokenSchema), refresh)
+authRouter.post('/logout', requireAuth, validate(refreshTokenSchema), logout)

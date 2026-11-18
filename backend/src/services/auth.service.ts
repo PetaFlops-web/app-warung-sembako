@@ -1,7 +1,7 @@
 import type { registerUserInput, loginUserInput } from '../schemas/user.schema.ts';
 import { ConflictError, AuthenticationError } from '../expectation/index.ts';
-import type { UserRegisterResponse, UserLoginResponse } from '../types/auth.type.ts';
-import TokenManager from '../utils/token-manager.ts';
+import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse } from '../types/auth.type.ts';
+import { createSession, rotateRefreshToken, revokeRefreshToken } from './refresh-token.service.ts';
 import { prisma } from '../config/prisma.ts';
 import bcrypt from 'bcryptjs';
 
@@ -47,14 +47,19 @@ export async function loginUser(input: loginUserInput): Promise<UserLoginRespons
     throw new AuthenticationError('Kata sandi salah');
   }
 
-  const token = TokenManager.generateAccessToken({
-    user_id: user.id,
-    email: user.email,
-    role: user.role
-  });
+  const session = await createSession({ id: user.id, role: user.role });
 
   return {
-    user_id: user.id,
-    accessToken: token,
+    id_pengguna: user.id,
+    token_akses: session.tokenAkses,
+    token_penyegaran: session.tokenPenyegaran,
   };
+}
+
+export async function refreshSession(tokenPenyegaran: string): Promise<TokenPairResponse> {
+  return rotateRefreshToken(tokenPenyegaran);
+}
+
+export async function logoutSession(tokenPenyegaran: string): Promise<void> {
+  await revokeRefreshToken(tokenPenyegaran);
 }

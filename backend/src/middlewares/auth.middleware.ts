@@ -1,9 +1,26 @@
 import type { Request, Response, NextFunction } from 'express'
 import type { JwtPayload } from '../types/auth.type.ts'
-import TokenManager from '../utils/token-manager.ts'
+import TokenManager, { ACCESS_TOKEN_TYPE } from '../utils/token-manager.ts'
 
-export function requireAuthKeep(req: Request, res: Response, next: NextFunction): void {
-  
+function toJwtPayload(decoded: string | object): JwtPayload | null {
+
+  if (typeof decoded === 'string') {
+    return null;
+  }
+
+  const payload = decoded as Record<string, unknown>;
+  const sub = payload['sub'];
+  const role = payload['role'];
+
+  if (typeof sub !== 'number' || typeof role !== 'string' || payload['typ'] !== ACCESS_TOKEN_TYPE) {
+    return null;
+  }
+
+  return { sub, role };
+}
+
+export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+
   const authHeader = req.headers.authorization
 
   const token = authHeader && authHeader.split(' ')[1];
@@ -14,15 +31,15 @@ export function requireAuthKeep(req: Request, res: Response, next: NextFunction)
   }
 
   try {
-    const payload = TokenManager.verifyAccessToken(token)
+    const payload = toJwtPayload(TokenManager.verifyAccessToken(token))
 
-    if (typeof payload === 'string') {
+    if (!payload) {
       res.status(401).json({ message: 'Format token tidak valid.' });
       return;
     }
 
-    req.user = payload as JwtPayload;
-    
+    req.user = payload;
+
     next()
   } catch {
     res.status(401).json({ message: 'Token tidak valid atau sudah kadaluarsa.' })

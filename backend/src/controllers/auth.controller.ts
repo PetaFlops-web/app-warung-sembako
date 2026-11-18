@@ -1,16 +1,16 @@
 import type { Request, Response, NextFunction } from 'express'
-import type { registerUserInput, loginUserInput } from '../schemas/user.schema.ts'
-import type { UserRegisterResponse, UserLoginResponse } from '../types/auth.type.ts';
-import { registerUser, loginUser } from '../services/auth.service.ts'
+import type { registerUserInput, loginUserInput, refreshTokenInput } from '../schemas/user.schema.ts'
+import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse } from '../types/auth.type.ts';
+import { registerUser, loginUser, refreshSession, logoutSession } from '../services/auth.service.ts'
 
 export async function login(
   req: Request<{}, {}, loginUserInput>, 
-  res: Response<{message: string, user?: UserLoginResponse}>, 
+  res: Response<{ pengguna: UserLoginResponse }>, 
   next: NextFunction
 ): Promise<void> {
   try {
-    const user = await loginUser(req.body);
-    res.status(200).json({ message: 'Login berhasil', user });
+    const pengguna = await loginUser(req.body);
+    res.status(200).json({ pengguna });
   } catch (error) {
     next(error);
   }
@@ -29,7 +29,28 @@ export async function register(
   }
 }
 
+export async function refresh(
+  req: Request<{}, {}, refreshTokenInput>,
+  res: Response<{ pengguna: TokenPairResponse }>,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const pengguna = await refreshSession(req.body.token_penyegaran);
+    res.status(200).json({ pengguna });
+  } catch (error) {
+    next(error);
+  }
+}
 
-export async function logout(_req: Request, res: Response): Promise<void> {
-
+export async function logout(
+  req: Request<{}, {}, refreshTokenInput>,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    await logoutSession(req.body.token_penyegaran);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 }

@@ -38,6 +38,7 @@ model User {
   products       Product[]
   stockMovements StockMovement[]
   aiUsageHistory AIUsageHistory[]
+  refreshTokens  RefreshToken[]
 }
 
 model Product {
@@ -94,4 +95,17 @@ model AIUsageHistory {
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
+}
+
+// Token penyegaran (refresh token) aktif per pengguna; mendukung rotasi dan pencabutan
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

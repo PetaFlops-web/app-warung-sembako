@@ -16,5 +16,12 @@ export const loginUserSchema = z.object({
   })
 });
 
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    token_penyegaran: z.string("Token penyegaran wajib dikirim").min(1, "Token penyegaran wajib dikirim"),
+  })
+});
+
 export type registerUserInput = z.infer<typeof registerUserSchema>['body'];
 export type loginUserInput = z.infer<typeof loginUserSchema>['body'];
+export type refreshTokenInput = z.infer<typeof refreshTokenSchema>['body'];
