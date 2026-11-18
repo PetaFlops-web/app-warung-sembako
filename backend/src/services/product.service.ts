@@ -1,7 +1,7 @@
-import { ConflictError, NotFoundError } from '../expectation/index.ts';
+import { ConflictError, ForbiddenError, NotFoundError } from '../expectation/index.ts';
 import * as categoryService from './category.service.ts';
 import { productRepository } from '../repositories/product.repository.ts';
-import { isOwner, resolveAktifFilter } from '../policies/product.policy.ts';
+import { DEACTIVATED_VISIBILITY_MESSAGE, isOwner, resolveAktifFilter } from '../policies/product.policy.ts';
 import { buildWhere, orderByFor, parseSort } from '../utils/helpers/product-query.ts';
 import { buildMetadata, parseLimit, parsePage } from '../utils/query.ts';
 import { isUniqueViolation } from '../utils/prisma-error.ts';
@@ -43,8 +43,12 @@ export async function listProducts(query: ListProductQuery, requesterRole: strin
 export async function getProductById(id: string, requesterRole: string): Promise<ProductResponse> {
   const row = await productRepository.findById(id);
 
-  if (!row || (row.isDeleted && !isOwner(requesterRole))) {
+  if (!row) {
     throw new NotFoundError('Produk tidak ditemukan');
+  }
+
+  if (row.isDeleted && !isOwner(requesterRole)) {
+    throw new ForbiddenError(DEACTIVATED_VISIBILITY_MESSAGE);
   }
 
   return toProductResponse(row);
