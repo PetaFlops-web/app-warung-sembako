@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
 import type { JwtPayload } from '../types/auth.type.ts'
+import { AuthenticationError, ForbiddenError } from '../expectation/index.ts'
 import TokenManager, { ACCESS_TOKEN_TYPE } from '../utils/token-manager.ts'
 
 function toJwtPayload(decoded: string | object): JwtPayload | null {
@@ -19,14 +20,14 @@ function toJwtPayload(decoded: string | object): JwtPayload | null {
   return { sub, role };
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
 
   const authHeader = req.headers.authorization
 
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    res.status(401).json({ message: 'Unauthorized. Silakan login terlebih dahulu.' })
+    next(new AuthenticationError('Unauthorized. Silakan login terlebih dahulu.'))
     return
   }
 
@@ -34,7 +35,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     const payload = toJwtPayload(TokenManager.verifyAccessToken(token))
 
     if (!payload) {
-      res.status(401).json({ message: 'Format token tidak valid.' });
+      next(new AuthenticationError('Format token tidak valid.'));
       return;
     }
 
@@ -42,14 +43,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
     next()
   } catch {
-    res.status(401).json({ message: 'Token tidak valid atau sudah kadaluarsa.' })
+    next(new AuthenticationError('Token tidak valid atau sudah kadaluarsa.'))
   }
 }
 
-export function requireOwner(req: Request, res: Response, next: NextFunction): void {
+export function requireOwner(req: Request, _res: Response, next: NextFunction): void {
 
   if (req.user?.role !== 'OWNER') {
-    res.status(403).json({ message: 'Akses ditolak. Hanya Pemilik Warung yang dapat melakukan ini.' })
+    next(new ForbiddenError('Akses ditolak. Hanya Pemilik Warung yang dapat melakukan ini.'))
     return
   }
 

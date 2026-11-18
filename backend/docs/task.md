@@ -151,3 +151,50 @@ Catatan: kode error tak terduga (500) belum dilogging di `errorHandler`, sehingg
 
 - [ ] Versi `origin/main` sudah memakai pesan login generik (`Email atau kata sandi salah`, FR-AUTH-03) dan skema UUID sesuai kontrak §2; keduanya tidak diambil karena keputusan "lokal menang". Bisa diporting terpisah bila diinginkan.
 - [ ] Data dev: tabel lama (`User`, 8 baris) masih dipakai; bila kelak pindah ke fondasi skema `c1c88c1`, `migrate deploy` akan DROP tabel tersebut (kehilangan data dev).
+
+---
+
+## Fase 5 — Modul Produk (kategori + produk) sesuai kontrak §6
+
+Rencana lengkap: `docs/planning/2026-11-18_plan-modul-produk.md`. Rujukan: `kontrak_api.md` §2/§3/§4/§6/§7, `srs.md` §4.1/§4.2/§5.2 FR-PROD-01..09/§5.4 FR-STAT-01..05, `prd.md` P-03/P-04.
+
+Keputusan owner (final): K1 tulis ulang skema mengikuti SRS §4.1 (UUID, tabel `categories`/`products`), K2 `Decimal(10,3)`, K3 status stok dihitung saat baca (tidak disimpan), K4 enum kontrak (`NORMAL`/`LOW`/`OUT_OF_STOCK`, `TRACKED`/`NOT_TRACKED`), K5 ikut kontrak (`/api`, amplop nama sumber daya, `metadata`), K6 `halaman`+`limit` (maks 100), K7 gambar **ditunda** (`gambar_url` nullable), K8 movement `INITIAL`/`IN`/`OUT`/`ADJUSTMENT`, K9 kolom `isDeleted` diekspos `aktif`, K10 nama maks 120.
+
+Rincian task:
+
+- [x] Infrastruktur uji: `vitest.config.ts`, script `npm test`, `tests/helpers/{env,db}.ts` dengan fixture + cleanup tetap (`UJI-` prefix, user `uji-*@example.com`)
+- [x] `src/utils/stock-status.ts` — fungsi murni `getStockStatus` + label FR-STAT-02 (+ 9 unit test)
+- [x] `prisma/schema.prisma` — `Category`, `Product` (UUID, `stock`/`minStock` `Decimal(10,3)`, `inventoryType`, `imageId`/`imageUrl`, `isDeleted`), `StockMovement` (tipe `INITIAL`, `stockBefore`/`stockAfter`), `RestockItem` UUID; enum `StockStatus` dihapus, `InventoryType` ditambah, `MovementType` + `INITIAL`
+- [x] Migrasi `20261118061329_product_module` (lewat `migrate diff` + `migrate deploy`, karena `migrate dev` gagal P3014): DROP tabel lama (0 baris) + CHECK `stock/minStock/price >= 0`, `quantity > 0` (SRS §4.2) + unique index `products_name_unit_lower_key` (FR-PROD-03)
+- [x] `src/utils/{query,product-mapper}.ts`, `src/types/product.type.ts`, `src/schemas/{category,product}.schema.ts`
+- [x] `src/services/{category,product}.service.ts`, `src/controllers/{category,product}.controller.ts`, `src/routes/{category,product}.route.ts`, dipasang di `src/app.ts`
+- [x] `GET/POST/PATCH /categories` (OWNER menulis), `GET /products`, `GET /products/{id}`, `POST /products` (stok awal + pergerakan `INITIAL` dalam satu transaksi), `PATCH /products/{id}` (partial, `jumlah_stok` ditolak, `aktif` untuk aktif/nonaktif), `DELETE /products/{id}` (soft delete 204)
+- [x] `src/middlewares/auth.middleware.ts` — 401/403 kini dilempar sebagai `AuthenticationError`/`ForbiddenError` sehingga berformat kontrak §4 (`status`/`kode`/`kesalahan`); menutup temuan Fase 2
+- [x] Verifikasi: `npx tsc --noEmit` hijau; `npm test` **66 uji lulus** (5 berkas, dijalankan 2x berturut-turut untuk membuktikan cleanup idempoten); matriks curl end-to-end di `PORT=3002`; baris `INITIAL` terverifikasi di DB; data uji dibersihkan (0 produk, 0 kategori, 0 pergerakan, 8 pengguna asli utuh)
+
+Verifikasi mentah (curl, server uji dimatikan setelahnya):
+
+| Uji | Respons |
+|---|---|
+| `POST /categories` | 201 `{"kategori":{"id":"c1bc91b3-...","nama":"UJI-Sembako","dibuat_pada":"...","diperbarui_pada":"..."}}` |
+| `POST /products` stok awal 12.5 | 201 `{"produk":{...,"jumlah_stok":12.5,"status_stok":"NORMAL","status_stok_label":"Normal","jenis_persediaan":"TRACKED","aktif":true}}` |
+| `POST /products` nama duplikat beda huruf | 409 `{"kode":"DUPLICATE","kesalahan":[{"message":"Nama produk sudah ada pada satuan yang sama"}]}` |
+| `GET /products?q=beras&sort=-harga_jual` | 200 `{"produk":[...],"metadata":{"halaman":1,"limit":20,"total_data":1,"total_halaman":1}}` |
+| `GET /products?q=tidakada` | 200 `{"produk":[],"metadata":{"total_data":0}}` (FR-PROD-09) |
+| `GET /products?limit=500` | 400 `BAD_REQUEST` — `limit harus bilangan bulat antara 1 dan 100` |
+| `PATCH /products/{id}` `stok_minimum: 20` | 200 `status_stok:"LOW"`, `status_stok_label:"Menipis"` |
+| `PATCH /products/{id}` `jumlah_stok: 99` | 400 `BAD_REQUEST` — `jumlah_stok tidak dapat diubah lewat endpoint ini` (FR-PROD-08) |
+| `DELETE /products/{id}` | 204 tanpa body; hilang dari daftar default; `GET ?aktif=all` menampilkan `aktif:false` (OWNER) |
+| Baris `stock_movements` | `INITIAL, 12.500, stockBefore 0, stockAfter 12.500, "Stok awal saat produk dibuat"` |
+
+Uji otomatis (66): unit `stock-status` (9), `product-mapper` (8), `product-schema` (13); integrasi `categories` (11) dan `products` (25) memakai supertest + JWT fixture.
+
+### Temuan tambahan Fase 5
+
+- [ ] Tabel `User` masih `Int` + `email` (belum `username`/`is_active`/UUID seperti SRS §4.1) — konversi sengaja ditunda agar 8 baris data dev tidak hilang dan payload JWT `sub` tidak berubah tipe.
+- [ ] Unggah gambar produk (`gambar` wajib di POST menurut kontrak §6) belum dikerjakan; `gambar_id`/`gambar_url` masih `null`.
+- [ ] Field `status_stok_label` adalah tambahan di luar objek kontrak §6, diambil dari FR-STAT-02/04.
+- [ ] `GET /categories` memakai `meta` dan `GET /products` memakai `metadata` — mengikuti kontrak apa adanya (§6 tidak konsisten).
+- [ ] Unique index fungsional `products_name_unit_lower_key` tidak dapat dinyatakan di `schema.prisma`; hasil `migrate diff` berikutnya harus diperiksa agar baris ini tidak terhapus.
+- [ ] Modul restock/pergerakan stok (kontrak §7) belum ada; kolom `status`/`reason`/`closed_at` pada `restock_items` (SRS §4.1) menyusul di fase itu.
+- [ ] `errorHandler` masih belum melogging error 500, dan rate limit (kontrak §2 `429`/`Retry-After`) belum ada di repo.

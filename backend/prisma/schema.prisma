@@ -7,25 +7,26 @@ datasource db {
   provider = "postgresql"
 }
 
-
 enum Role {
-  OWNER  // Pemilik Warung
+  OWNER // Pemilik Warung
   KEEPER // Penjaga Warung
 }
 
-enum StockStatus {
-  NORMAL  // stok > batas minimum
-  LOW     // stok <= batas minimum (menipis)
-  EMPTY   // stok = 0 (habis)
+enum InventoryType {
+  TRACKED // stok dipantau (default)
+  NOT_TRACKED // stok tidak dipantau
 }
 
 enum MovementType {
-  IN         // barang masuk
-  OUT        // barang keluar
+  INITIAL // stok awal saat produk dibuat
+  IN // barang masuk
+  OUT // barang keluar
   ADJUSTMENT // penyesuaian stok manual oleh Pemilik
 }
 
-
+// Catatan: model User/RefreshToken/AIUsageHistory belum mengikuti SRS 4.1
+// (masih id Int, belum ada username/is_active) karena 8 baris data dev sudah ada.
+// Konversi users ke UUID dipisah ke task tersendiri.
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -41,49 +42,78 @@ model User {
   refreshTokens  RefreshToken[]
 }
 
+// Kategori produk (SRS 4.1)
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+// Produk warung (SRS 4.1). Status stok TIDAK disimpan, dihitung dari stock & minStock.
 model Product {
-  id        Int         @id @default(autoincrement())
-  name      String
-  category  String
-  unit      String
-  price     Decimal     @db.Decimal(12, 2)
-  stock     Int         @default(0)
-  minStock  Int         @default(0)
-  status    StockStatus @default(NORMAL)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id            String        @id @default(uuid()) @db.Uuid
+  name          String
+  categoryId    String        @db.Uuid
+  category      Category      @relation(fields: [categoryId], references: [id])
+  unit          String        @default("pcs")
+  price         Int
+  stock         Decimal       @default(0) @db.Decimal(10, 3)
+  minStock      Decimal       @default(0) @db.Decimal(10, 3)
+  inventoryType InventoryType @default(TRACKED)
+  imageId       String?
+  imageUrl      String?
+  isDeleted     Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   createdById Int
   createdBy   User @relation(fields: [createdById], references: [id])
 
   stockMovements StockMovement[]
   restockItems   RestockItem[]
+
+  @@index([name])
+  @@index([categoryId])
+  @@map("products")
 }
 
-// Mencatat setiap perubahan stok (masuk, keluar, atau penyesuaian)
+// Mencatat setiap perubahan stok (stok awal, masuk, keluar, atau penyesuaian)
 model StockMovement {
-  id        Int          @id @default(autoincrement())
-  type      MovementType
-  quantity  Int
-  notes     String?
-  createdAt DateTime     @default(now())
+  id          String       @id @default(uuid()) @db.Uuid
+  type        MovementType
+  quantity    Decimal      @db.Decimal(10, 3)
+  stockBefore Decimal      @db.Decimal(10, 3)
+  stockAfter  Decimal      @db.Decimal(10, 3)
+  note        String?
+  createdAt   DateTime     @default(now())
 
-  productId Int
+  productId String  @db.Uuid
   product   Product @relation(fields: [productId], references: [id])
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
+
+  @@index([productId, createdAt])
+  @@map("stock_movements")
 }
 
-// Daftar produk yang perlu diisi ulang (stok menipis atau habis)
+// Daftar produk yang perlu diisi ulang (stok menipis atau habis).
+// Kolom status/reason/closed_at (SRS 4.1) ditambahkan saat modul restock dikerjakan.
 model RestockItem {
-  id           Int      @id @default(autoincrement())
-  suggestedQty Int?
+  id           String   @id @default(uuid()) @db.Uuid
+  suggestedQty Decimal? @db.Decimal(10, 3)
   addedAt      DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  productId Int     @unique
+  productId String  @unique @db.Uuid
   product   Product @relation(fields: [productId], references: [id])
+
+  @@map("restock_items")
 }
 
 // Riwayat percakapan dengan AI Assistant (Gemini)

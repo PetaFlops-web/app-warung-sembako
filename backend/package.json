@@ -19,6 +19,8 @@
     "dev:tsx": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate": "prisma generate",
     "prisma:generate": "prisma generate",
     "push": "prisma db push",
