@@ -53,3 +53,48 @@ Data uji (user `uji.refresh@example.com` + 2 baris `RefreshToken`) sudah dihapus
 - [ ] Pesan error login membedakan "Email tidak ditemukan" vs "Kata sandi salah"; `srs.md` FR-AUTH-03 meminta pesan generik agar tidak membocorkan mana yang salah.
 - [ ] `ACCESS_TOKEN_AGE=10800` (3 jam) di `.env`, sedangkan `kontrak_api.md` §3 menyebut access token berlaku 900 detik.
 - [ ] `.env` belum punya pasangan `.env.example`; `REFRESH_TOKEN_AGE` wajib ada di setiap environment (server gagal start bila kosong/format salah).
+
+---
+
+## Fase 2 — `kode` pada respons error (kontrak §4)
+
+Rujukan: `kontrak_api.md` §4 (format error `status` + `kode` + `kesalahan[]`, plus tabel kode per status).
+
+Keputusan owner pada sesi ini:
+
+1. Nilai `kode` dari konstanta per kelas (`ERROR_CODE`), tetap bisa di-override saat `throw` untuk kode spesifik (mis. `INSUFFICIENT_STOCK`).
+2. Payload mengikuti contoh kontrak penuh: `kode` + `kesalahan[]`; field `message` dihapus (breaking, konsumen lama harus menyesuaikan).
+3. Cakupan: semua error termasuk `InternalServerError`, plus penyesuaian respons 400 dari `validation.middleware`.
+
+Rincian task:
+
+- [x] `src/expectation/client-error.ts`: konstanta `ERROR_CODE`, tipe `ErrorCode`, properti `kode` pada `ClientError`
+- [x] Subclass menerima `kode` opsional dengan default sesuai tabel kontrak: `ValidationError`/`InvariantError` = BAD_REQUEST (400), `AuthenticationError` = UNAUTHORIZED (401), `ForbiddenError` = FORBIDDEN (403), `NotFoundError` = NOT_FOUND (404), `ConflictError` = DUPLICATE (409)
+- [x] `src/expectation/internal-server-error.ts`: properti `kode` default INTERNAL_SERVER_ERROR
+- [x] `src/middlewares/error.middleware.ts`: emit `{ status, kode, kesalahan[] }`; `kesalahan` berisi per field bila `details` ada, selain itu `[{ message }]`; error tak dikenal tetap 500 + pesan generik (tanpa stack trace)
+- [x] `InternalServerError` ditangani khusus di errorHandler sehingga pesan kustomnya tidak lagi hilang
+- [x] `src/middlewares/validation.middleware.ts`: 400 → `{ status, kode: 'BAD_REQUEST', kesalahan: [{ field: pesan }] }`
+- [x] Verifikasi: `npx tsc --noEmit` hijau; simulasi `errorHandler` (tsx) untuk 8 kelas error + override kode + `Error` tak dikenal; curl di `PORT=3002`
+
+Verifikasi mentah:
+
+| Uji | Respons |
+|---|---|
+| Simulasi `AuthenticationError` | 401 `{"status":"error","kode":"UNAUTHORIZED","kesalahan":[{"message":"..."}]}` |
+| Simulasi `ConflictError` | 409 `{"kode":"DUPLICATE",...}` |
+| Simulasi `NotFoundError` / `ForbiddenError` | 404 `NOT_FOUND` / 403 `FORBIDDEN` |
+| Simulasi `ValidationError` + `details` | 400 `{"kode":"BAD_REQUEST","kesalahan":[{"email":"Email tidak valid"}]}` |
+| Simulasi `InternalServerError('Gagal menghubungi layanan model')` | 500 `{"kode":"INTERNAL_SERVER_ERROR","kesalahan":[{"message":"Gagal menghubungi layanan model"}]}` |
+| Override kode (`new ConflictError('Stok tidak mencukupi', 'INSUFFICIENT_STOCK')`) | 409 `{"kode":"INSUFFICIENT_STOCK",...}` |
+| `Error` biasa | 500 `INTERNAL_SERVER_ERROR` + pesan generik (isi asli tidak bocor) |
+| `POST /login` body kosong | 400 `{"kode":"BAD_REQUEST","kesalahan":[{"email":"Email tidak valid"},{"password":"..."}]}` |
+| `POST /login` kredensial salah | 401 `{"kode":"UNAUTHORIZED","kesalahan":[{"message":"Kata sandi salah"}]}` |
+| `POST /register` email sudah ada | 409 `{"kode":"DUPLICATE","kesalahan":[{"message":"Email sudah digunakan"}]}` |
+| `POST /refresh` body kosong | 400 `{"kode":"BAD_REQUEST","kesalahan":[{"token_penyegaran":"Token penyegaran wajib dikirim"}]}` |
+| `POST /refresh` token ngawur | 401 `{"kode":"UNAUTHORIZED","kesalahan":[{"message":"Token penyegaran tidak valid atau sudah kedaluwarsa"}]}` |
+
+### Temuan tambahan (belum dikerjakan)
+
+- [ ] JSON malformed (SyntaxError dari body-parser) masih dibalas 500 INTERNAL_SERVER_ERROR; `kontrak_api.md` §4 menyebut malformed = 400 BAD_REQUEST.
+- [ ] 401/403 yang ditulis langsung oleh `auth.middleware.ts` (`{ message }` tanpa `status`/`kode`) belum ikut format kontrak — di luar cakupan yang dipilih untuk fase ini.
+- [ ] Pesan default Zod masih berbahasa Inggris untuk tipe yang salah (mis. `Invalid input: expected string, received undefined`) karena schema tidak menulis pesan untuk kasus tipe.

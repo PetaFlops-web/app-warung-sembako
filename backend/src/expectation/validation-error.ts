@@ -1,8 +1,8 @@
-import { ClientError } from './client-error.ts';
+import { ClientError, ERROR_CODE, type ErrorCode } from './client-error.ts';
 
 export class ValidationError extends ClientError {
-  constructor(message = 'Validasi data gagal', details?: unknown) {
-    super(message, 400, details);
+  constructor(message = 'Validasi data gagal', kode: ErrorCode = ERROR_CODE.BAD_REQUEST, details?: unknown) {
+    super(message, 400, kode, details);
     this.name = 'ValidationError';
   }
 }

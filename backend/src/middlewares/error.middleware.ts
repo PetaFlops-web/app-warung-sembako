@@ -1,5 +1,17 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ClientError } from '../expectation/index.ts';
+import { ClientError, ERROR_CODE, InternalServerError } from '../expectation/index.ts';
+
+function buildKesalahan(message: string, details?: unknown): Array<Record<string, string>> {
+  if (details && typeof details === 'object' && !Array.isArray(details)) {
+    const entries = Object.entries(details as Record<string, unknown>);
+
+    if (entries.length > 0) {
+      return entries.map(([field, value]) => ({ [field]: String(value) }));
+    }
+  }
+
+  return [{ message }];
+}
 
 export function errorHandler(
   err: unknown,
@@ -7,17 +19,18 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
-  if (err instanceof ClientError) {
+  if (err instanceof ClientError || err instanceof InternalServerError) {
     res.status(err.statusCode).json({
       status: 'error',
-      message: err.message,
-      ...(err.details ? { details: err.details } : {}),
+      kode: err.kode,
+      kesalahan: buildKesalahan(err.message, err instanceof ClientError ? err.details : undefined),
     });
     return;
   }
 
   res.status(500).json({
     status: 'error',
-    message: 'Terjadi kesalahan pada server',
+    kode: ERROR_CODE.INTERNAL_SERVER_ERROR,
+    kesalahan: [{ message: 'Terjadi kesalahan pada server' }],
   });
 }
