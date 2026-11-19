@@ -18,9 +18,6 @@ const TokenManager = {
       algorithm: ALGORITHM,
     }),
 
-  // `jti` wajib ada di refresh token: `iat`/`exp` berpresisi detik, sehingga dua token
-  // untuk sub+role yang sama pada detik yang sama akan identik dan hash sha256-nya
-  // bentrok dengan indeks unik RefreshToken.tokenHash (Prisma P2002 → 500).
   generateRefreshToken: (payload: JwtPayload) =>
     jwt.sign({ ...payload, typ: REFRESH_TOKEN_TYPE, jti: randomUUID() }, refreshTokenKey, {
       expiresIn: refreshTokenAge,

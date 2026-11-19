@@ -54,10 +54,14 @@ export async function getProductById(id: string, requesterRole: string): Promise
   return toProductResponse(row);
 }
 
-export async function createProduct(input: createProductInput, actorId: number): Promise<ProductResponse> {
+export async function createProduct(input: createProductInput, actorId:  number, file?: Express.Multer.File): Promise<ProductResponse> {
   const nama = input.nama.trim();
   const satuan = input.satuan.trim();
   const duplicate = await productRepository.findDuplicate(nama, satuan);
+
+  const imagePath = file ? `/uploads/${file.filename}` : null;
+  const imageId = imagePath ? imagePath.split('/').pop() : null;
+
 
   if (duplicate) {
     throw new ConflictError(DUPLICATE_NAME_MESSAGE);
@@ -65,14 +69,16 @@ export async function createProduct(input: createProductInput, actorId: number):
 
   await categoryService.assertExists(input.id_kategori);
   
-  const stokAwal = input.jumlah_stok_awal ?? 0;
+  const stokAwal = input.jumlah_stok_awal !== undefined ? Number(input.jumlah_stok_awal) : 0;
   const data: Prisma.ProductUncheckedCreateInput = {
     name: nama,
     categoryId: input.id_kategori,
     unit: satuan,
-    price: input.harga_jual,
+    price: Number(input.harga_jual),
     stock: stokAwal,
-    minStock: input.stok_minimum,
+    imageId: imageId ?? null,
+    imageUrl: imagePath,
+    minStock: Number(input.stok_minimum),
     inventoryType: input.jenis_persediaan ?? 'TRACKED',
     createdById: actorId,
   };

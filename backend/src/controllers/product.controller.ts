@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import type { Request, Response, NextFunction } from 'express';
 import type { BodyRequest, IdBodyRequest, QueryRequest } from '../types/http.type.ts';
 import type { createProductInput, updateProductInput } from '../schemas/product.schema.ts';
@@ -37,9 +38,12 @@ export async function store(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const produk = await createProduct(req.body, req.user?.sub ?? 0);
+    const produk = await createProduct(req.body, req.user?.sub ?? 0, req.file);
     res.status(201).json({ produk });
   } catch (error) {
+    if (req.file?.path) {
+      fs.unlink(req.file.path, () => {});
+    }
     next(error);
   }
 }

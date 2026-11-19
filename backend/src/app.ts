@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
+import path from 'node:path'
 import { authRouter } from './routes/auth.route.js'
 import { categoryRouter } from './routes/category.route.js'
 import { productRouter } from './routes/product.route.js'
@@ -16,6 +17,7 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'src/uploads')))
 
 app.use('/api', authRouter)
 app.use('/api', categoryRouter)

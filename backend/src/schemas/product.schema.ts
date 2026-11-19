@@ -1,4 +1,17 @@
 import { z } from 'zod';
+import * as z4 from "zod/v4/core";
+
+const coerceNumber = <T extends z4.$ZodType>(schema: T) =>
+  z.preprocess((val) => {
+    if (val === undefined || val === null) return val;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed === '') return undefined;
+      const n = Number(trimmed);
+      return Number.isNaN(n) ? val : n;
+    }
+    return val;
+  }, schema);
 
 const NAMA_PRODUK = z
   .string('Nama produk wajib dikirim')
@@ -12,6 +25,11 @@ const SATUAN = z
   .min(1, 'Satuan wajib dikirim')
   .max(20, 'Satuan maksimal 20 karakter');
 
+const HARGA_JUAL = z
+  .number('Harga jual harus berupa angka')
+  .int('Harga jual harus bilangan bulat')
+  .min(0, 'Harga jual tidak boleh negatif');
+
 const KUANTITAS = z
   .number('Kuantitas harus berupa angka')
   .min(0, 'Kuantitas tidak boleh negatif')
@@ -22,12 +40,11 @@ export const createProductSchema = z.object({
     nama: NAMA_PRODUK,
     id_kategori: z.uuid('id_kategori harus UUID yang valid'),
     satuan: SATUAN,
-    harga_jual: z
-      .number('Harga jual harus berupa angka')
-      .int('Harga jual harus bilangan bulat')
-      .min(0, 'Harga jual tidak boleh negatif'),
-    stok_minimum: KUANTITAS,
-    jumlah_stok_awal: KUANTITAS.optional(),
+    harga_jual: coerceNumber(HARGA_JUAL),
+    stok_minimum: coerceNumber(KUANTITAS),
+    gambar: z.unknown().optional(),
+    gambar_produk: z.unknown().optional(),
+    jumlah_stok_awal: coerceNumber(KUANTITAS.optional()).optional(),
     jenis_persediaan: z.enum(['TRACKED', 'NOT_TRACKED'], 'jenis_persediaan harus TRACKED atau NOT_TRACKED').optional(),
   }),
 });
@@ -38,8 +55,8 @@ export const updateProductSchema = z.object({
       nama: NAMA_PRODUK.optional(),
       id_kategori: z.uuid('id_kategori harus UUID yang valid').optional(),
       satuan: SATUAN.optional(),
-      harga_jual: z.number('Harga jual harus berupa angka').int('Harga jual harus bilangan bulat').min(0, 'Harga jual tidak boleh negatif').optional(),
-      stok_minimum: KUANTITAS.optional(),
+      harga_jual: coerceNumber(HARGA_JUAL.optional()).optional(),
+      stok_minimum: coerceNumber(KUANTITAS.optional()).optional(),
       jenis_persediaan: z.enum(['TRACKED', 'NOT_TRACKED'], 'jenis_persediaan harus TRACKED atau NOT_TRACKED').optional(),
       jumlah_stok: z
         .unknown()
