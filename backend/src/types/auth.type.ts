@@ -25,3 +25,12 @@ export type RefreshTokenOwner = {
   role: string;
 };
 
+export interface UserProfileResponse {
+  id: number;
+  nama: string;
+  nama_pengguna: string;
+  email: string;
+  peran: string;
+}
+
+

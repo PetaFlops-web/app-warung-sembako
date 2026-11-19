@@ -1,7 +1,8 @@
 import type { registerUserInput, loginUserInput } from '../schemas/user.schema.ts';
-import { ConflictError, AuthenticationError } from '../expectation/index.ts';
-import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse } from '../types/auth.type.ts';
+import { ConflictError, AuthenticationError, NotFoundError } from '../expectation/index.ts';
+import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse, UserProfileResponse } from '../types/auth.type.ts';
 import { createSession, rotateRefreshToken, revokeRefreshToken } from './refresh-token.service.ts';
+import { userRepository } from '../repositories/user.repository.ts';
 import { prisma } from '../config/prisma.ts';
 import bcrypt from 'bcryptjs';
 
@@ -63,3 +64,20 @@ export async function refreshSession(tokenPenyegaran: string): Promise<TokenPair
 export async function logoutSession(tokenPenyegaran: string): Promise<void> {
   await revokeRefreshToken(tokenPenyegaran);
 }
+
+export async function getCurrentUser(userId: number): Promise<UserProfileResponse> {
+  const user = await userRepository.findById(userId);
+
+  if (!user) {
+    throw new NotFoundError('Pengguna tidak ditemukan');
+  }
+
+  return {
+    id: user.id,
+    nama: user.name,
+    nama_pengguna: user.name,
+    email: user.email,
+    peran: user.role,
+  };
+}
+

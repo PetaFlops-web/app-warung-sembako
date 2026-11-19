@@ -1,8 +1,8 @@
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import type { BodyRequest } from '../types/http.type.ts';
 import type { registerUserInput, loginUserInput, refreshTokenInput } from '../schemas/user.schema.ts'
-import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse } from '../types/auth.type.ts';
-import { registerUser, loginUser, refreshSession, logoutSession } from '../services/auth.service.ts'
+import type { UserRegisterResponse, UserLoginResponse, TokenPairResponse, UserProfileResponse } from '../types/auth.type.ts';
+import { registerUser, loginUser, refreshSession, logoutSession, getCurrentUser } from '../services/auth.service.ts'
 
 export async function login(
   req: BodyRequest<loginUserInput>, 
@@ -55,3 +55,18 @@ export async function logout(
     next(error);
   }
 }
+
+export async function me(
+  req: Request,
+  res: Response<{ pengguna: UserProfileResponse }>,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user?.sub ?? 0;
+    const pengguna = await getCurrentUser(userId);
+    res.status(200).json({ pengguna });
+  } catch (error) {
+    next(error);
+  }
+}
+
