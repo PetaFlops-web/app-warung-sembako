@@ -1,8 +1,8 @@
-import type { Request, Response, NextFunction } from 'express';
-import { ClientError, ERROR_CODE, InternalServerError } from '../expectation/index.ts';
+import type { Request, Response, NextFunction } from "express";
+import { ClientError, ERROR_CODE, InternalServerError } from "../expectation/index.ts";
 
 function buildKesalahan(message: string, details?: unknown): Array<Record<string, string>> {
-  if (details && typeof details === 'object' && !Array.isArray(details)) {
+  if (details && typeof details === "object" && !Array.isArray(details)) {
     const entries = Object.entries(details as Record<string, unknown>);
 
     if (entries.length > 0) {
@@ -13,15 +13,11 @@ function buildKesalahan(message: string, details?: unknown): Array<Record<string
   return [{ message }];
 }
 
-export function errorHandler(
-  err: unknown,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-): void {
+export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+  console.error("[Error Handler]", err);
   if (err instanceof ClientError || err instanceof InternalServerError) {
     res.status(err.statusCode).json({
-      status: 'error',
+      status: "error",
       kode: err.kode,
       kesalahan: buildKesalahan(err.message, err instanceof ClientError ? err.details : undefined),
     });
@@ -29,8 +25,8 @@ export function errorHandler(
   }
 
   res.status(500).json({
-    status: 'error',
+    status: "error",
     kode: ERROR_CODE.INTERNAL_SERVER_ERROR,
-    kesalahan: [{ message: 'Terjadi kesalahan pada server' }],
+    kesalahan: [{ message: "Terjadi kesalahan pada server" }],
   });
 }
