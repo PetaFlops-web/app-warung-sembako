@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import * as z4 from "zod/v4/core";
+import type * as z4 from "zod/v4/core";
 
 const coerceNumber = <T extends z4.$ZodType>(schema: T) =>
   z.preprocess((val) => {

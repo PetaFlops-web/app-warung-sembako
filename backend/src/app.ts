@@ -6,6 +6,7 @@ import path from 'node:path'
 import { authRouter } from './routes/auth.route.js'
 import { categoryRouter } from './routes/category.route.js'
 import { productRouter } from './routes/product.route.js'
+import { stockRouter } from './routes/stock.route.ts'
 import { errorHandler } from './middlewares/error.middleware.ts'
 
 const app = express()
@@ -22,6 +23,7 @@ app.use('/uploads', express.static(path.resolve(process.cwd(), 'src/uploads')))
 app.use('/api', authRouter)
 app.use('/api', categoryRouter)
 app.use('/api', productRouter)
+app.use('/api', stockRouter)
 
 app.use(errorHandler)
 
